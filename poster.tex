@@ -39,6 +39,7 @@
 \usepackage{graphicx}
 \usepackage{amssymb,amsmath}
 \usepackage[export]{adjustbox} %allows using valign with \includegraphics
+\usepackage{subfig}
 
 \renewcommand{\arraystretch}{1.5}
 
@@ -93,8 +94,8 @@
 	headerFontColor=black,
 	}%
 	{\includegraphics[height=7em]{logos/mff-black.pdf}}
-	{Thesis name goes here}
-	{\vspace{1ex} Yourname Goeshere}
+	{Configurable point rasterization for large scatterplots}
+	{\vspace{1ex} Tereza Kulichová}
 	{\includegraphics[height=7em]{logos/uk-red.pdf}}
 
 
@@ -102,58 +103,99 @@
 % LEFT COLUMN
 %
 
-\begin{posterbox}[column=0,name=background]{Background}
-Describe what is the problem that your thesis addresses.
+\begin{posterbox}[column=0,name=background,
+headerColorOne=red!60, boxColorOne=red!20]{Background}
+Until recently, scatterplots could only be plotted in R using its very slow base plot function. 
 
-Include a picture of the problem. Name the problem.
+The \textbf{speed} problem was solved by package \texttt{scattermore}. However, \texttt{scattermore} had only a single-purpose \textbf{API} and it didn't prevent \textbf{overplotting} -- overlapping of the data in the visualization, making it difficult to see individual data.
 
-\begin{center}\begin{tikzpicture}[ultra thick, inner sep=1ex]
-\node[rectangle, rounded corners=1ex, draw=red!80!black, color=red!80!black, font=\huge\bfseries, rotate=21] {Problem!};
-\end{tikzpicture}\end{center}
+The problem of overplotting, its symmetric case, and its primitive insufficient solution by randomizing point order are visible below.
+
+\begin{center}
+\setcaptiontype{figure}% Fake a figure environment
+{\frame{\includegraphics[width=0.25\linewidth]{img/overplot_yellow.png}}}
+\hfill
+{\frame{\includegraphics[width=0.25\linewidth]{img/overplot_blue.png}}}
+\hfill
+{\frame{\includegraphics[width=0.25\linewidth]{img/overplot_random.png}}}
+%\caption{Example of overplotting and techniques dealing with it.}
+\end{center}
+
 \end{posterbox}
 
 \begin{posterbox}[column=0, name=goals, below=background, headerColorOne=cyan!60, boxColorOne=cyan!20]{Thesis goals}
+
+We redesign \texttt{scattermore} with the following requirements.
+
 \begin{itemize}
-\item How do you approach and address the problem?
-\item What tools do you use to address it?
-\item \dots
+\item \textbf{High-customizable API.} We assign each subtask to a single method to ensure more variation in output for the user.
+\item \textbf{Reduction of overplotting.} We introduce the new RGBWT data format, which combines images equally.
+\item \textbf{Fast plotting.} We implement the computationally expensive operation in C language.
 \end{itemize}
 
-Highlighting important boxes helps a lot, but do not overdo the highlighting --- if all boxes are highlighted, not a single one will actually stand out.
 \end{posterbox}
 
-\begin{posterbox}[column=0, name=something1, below=goals]{Some extra boxes}
-This box may contain an overview of the used methods, mathematics, program structure, etc.
+\begin{posterbox}[column=0, name=pipeline, below=goals, 
+headerColorOne=black!80, headerFontColor=white]{Scattermore pipeline}
+\tikzstyle{box}=[rectangle,draw,rounded corners=0.5ex]
+\tikzstyle{round}=[circle,draw, align=center]
+\begin{center}\begin{tikzpicture}[thick,font=\sf\scriptsize]
+\node[box,fill=pink!20] (input_no_colors_points) at (-2,12) {Points without color input};
+\node[box,fill=pink!20] (input_no_colors_lines) at (-2,10) {Lines without color input};
+\node[box,fill=black!10] (input_colors_points) at (-2,9) {Points with color input};
+\node[box,fill=black!10] (input_colors_lines) at (-2,7) {Lines with color input};
+\node[box,fill=red!30] (result) at (-2,5) {Raster result};
+\node[round,fill=yellow!20] (histogram) at (2,12) {Histogram\\raster};
+\node[round,fill=yellow!20] (blurred_histogram) at (5,12) {Kernelized\\histogram};
+\node[round,fill=orange!20] (colorized_histogram) at (4,10) {RGBWT\\raster};
+\node[round,fill=orange!20] (colorized_data) at (2,8) {RGBWT\\raster};
+\node[round,fill=orange!20] (merged_rgbwt) at (5,8) {Merged\\RGBWT};
+\node[round,fill=orange!20] (blurred_rgbwt) at (5,5) {Kernelized\\RGBWT};
+\node[round,fill=purple!20] (rgba_int) at (1,5) {Integer\\RGBA};
+\node[round,fill=green!20] (rgba_float) at (5,2) {Float\\RGBA};
+\node[round,fill=green!20] (blended_rgba) at (0,2) {Blended\\float RGBA};
 
-Include a picture, because pictures are better. Thesis defense takes less than 10 minutes, no one can read a wall of text in that short time. (For comparison, the usual realistic poster visit on a conference takes 15 seconds, unless the poster manages to catch the attention in that short time.)
+\draw[->](input_no_colors_points) to node[above=20pt, midway, sloped, font=\tiny\ttfamily] {scatter\_points\_histogram} (histogram);
 
-\tikzstyle{rec}=[rectangle, draw, rounded corners=1ex, font=\huge\bfseries]
-\begin{center}\begin{tikzpicture}[ultra thick, inner sep=1ex]
-\node[rec] (a) {Keep};
-\node[rec, circle, right=of a] (b) {it};
-\node[rec, right=of b] (c) {simple};
-\node[rec, densely dotted, below=6cm of c, font=\small] (notice) {\dots{}but precise!};
-\draw[->] (a) to (b);
-\draw[->] (b) to (c);
-\draw[dotted] (notice) to (c);
+\draw[->](input_no_colors_lines) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {scatter\_lines\_histogram} (histogram);
+
+\draw[->](histogram) to node[above=20pt, midway, sloped, font=\tiny\ttfamily] {apply\_kernel\_histogram} (blurred_histogram);
+
+\draw[->](blurred_histogram) to node[below=15pt, midway, sloped, font=\tiny\ttfamily] {histogram\_to\_rgbwt} (colorized_histogram);
+
+\draw[->,dotted](histogram) to node[below=10pt, midway, sloped, font=\tiny\ttfamily] {histogram\_to\_rgbwt} (colorized_histogram);
+
+\draw[->](input_colors_points) to node[above=15pt, midway, sloped, font=\tiny\ttfamily] {scatter\_points\_rgbwt} (colorized_data);
+
+\draw[->](input_colors_lines) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {scatter\_lines\_rgbwt} (colorized_data);
+
+\draw[->](colorized_data) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {merge\_rgbwt} (merged_rgbwt);
+
+\draw[->](colorized_histogram) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {merge\_rgbwt} (merged_rgbwt);
+
+\draw[->](merged_rgbwt) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {apply\_kernel\_rgbwt} (blurred_rgbwt);
+
+\draw[->,dotted](blurred_rgbwt) to node[below=10pt, midway, sloped, font=\tiny\ttfamily] {rgbwt\_to\_rgba\_int} (rgba_int);
+
+\draw[->](blurred_rgbwt) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {rgbwt\_to\_rgba\_float} (rgba_float);
+
+\draw[->,dotted](colorized_histogram) to node[below=10pt, left, sloped, font=\tiny\ttfamily] {rgbwt\_to\_rgba\_int} (rgba_int);
+
+\draw[->,dotted](colorized_data) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {rgbwt\_to\_rgba\_int} (rgba_int);
+
+\draw[->,dotted](merged_rgbwt) to node[below=10pt, midway, sloped, font=\tiny\ttfamily] {rgbwt\_to\_rgba\_int} (rgba_int);
+
+\draw[->,dotted](rgba_float) to node[below=10pt, midway, sloped, font=\tiny\ttfamily] {rgba\_float\_to\_rgba\_int} (rgba_int);
+
+\draw[->](rgba_float) to node[below=10pt, midway, sloped, font=\tiny\ttfamily] {blend\_rgba\_float} (blended_rgba);
+
+\draw[->](blended_rgba) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {rgba\_float\_to\_rgba\_int} (rgba_int);
+
+\draw[->](rgba_int) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {rgba\_int\_to\_raster} (result);
+
 \end{tikzpicture}\end{center}
-
 \end{posterbox}
 
-\begin{posterbox}[column=0, name=something2, below=something1, headerColorOne=yellow!80!orange!95!black, boxColorOne=yellow!33]{Golden rule of posters}
-For each $p \in P$ where $P$ is a set of posters:
-$$ \textsc{Success}(p) = \frac{\textsc{Clarity}(p)}{\textsc{TimeToViewerAttention}(p)} $$
-\end{posterbox}
-
-%
-% FOOTER
-%
-
-\begin{posterbox}[column=0, span=2, name=footer, below=something2,
-	textborder=none, headerborder=none, boxheaderheight=0pt,
-	boxColorOne=black!3]{}
-If some institute/grant/department sponsored the work, put an acknowledgement here.
-\end{posterbox}
 
 %
 % RIGHT COLUMN
@@ -163,49 +205,48 @@ If some institute/grant/department sponsored the work, put an acknowledgement he
 % with measurements are perfect, tables are also good.
 %
 
-\begin{posterbox}[column=1, name=result1]{Result: SomePlots are Good}
+\begin{posterbox}[column=1, name=overplotting_api, headerColorOne=black!80, headerFontColor=white]{Result: Solution to overplotting and better API}
 \begin{center}
-\includegraphics[width=0.7\linewidth]{img/ukazka-obr02.pdf}
-\end{center}
-
-You may want to choose a single picture and make it stand out of the poster, so that it communicates the main result of your thesis as clearly as possible.
-\end{posterbox}
-
-\begin{posterbox}[column=1, name=result2, below=result1]{Result: TableData are OK too}
-\begin{center}
-\begin{tabular}{lrr}
- & \textbf{SomeProgram} & \textbf{ThisThesis} \\
-\hline
-Process A & 50\% & 58\% \\
-Time for A & 35 days & \textcolor{green!80!black}{35 seconds} \\
-Process B & \textcolor{red}{15\%} & 55\% \\
-Time for B & 1 day & 8 hours \\
-Price & 66.6 EUR & free
-\end{tabular}
+\includegraphics[width=0.3\linewidth]{img/overplot_merge.png}
 \end{center}
 \end{posterbox}
 
-\begin{posterbox}[column=1, name=result3, below=result2, headerColorOne=green!50!yellow, boxColorOne=green!10]{Main result}
+
+\begin{posterbox}[column=1, name=plot, below=overplotting_api, headerColorOne=black!80, headerFontColor=white]{Result: Improved Performance}
+\begin{center}
+\includegraphics[width=0.7\linewidth]{img/version_comparison.png}
+\end{center}
+
+Comparison of the speed difference when plotting points among R, RStudio, original, and new \texttt{scattermore}’s version.
+\end{posterbox}
+
+
+\begin{posterbox}[column=1, name=main_result, below=plot, headerColorOne=green!90, boxColorOne=green!20]{Main result}
 \large\bfseries
 \vspace{1ex}
 \begin{center}
-Program ThesisProgram solves the problem better than OtherProgram if X, and faster if Y.
+% Program ThesisProgram solves the problem better than OtherProgram if X, and faster if Y.
+Scattermore offers a highly customizable API, solves the problem of overplotting, and is much faster than base R functions.
 \end{center}
 \vspace{.5ex}
 \end{posterbox}
 
-\begin{posterbox}[column=1, name=conclusion, below=result3, bottomaligned=something2]{Conclusions}
+\begin{posterbox}[column=1, name=conclusion, below=main_result, bottomaligned=pipeline, headerColorOne=violet!50, boxColorOne=violet!20]{Conclusions}
 \begin{itemize}
-\item explain the value of your result to others
-\item point out any applications
-\item if the program is online/opensource/on github, you may highlight it here
+\item \texttt{Scattermore} enables users to blur images, blend or merge them according to their preferences and, at the same time, sufficiently fast.
+\item It is especially useful in the cytometric community for interactive analysis of large biological data.
+\item \texttt{Scattermore} is available on GitHub as a development version and as R's official CRAN package version.
 \end{itemize}
-Possible future work:
+\textbf{Possible future work:}
 \begin{itemize}
-\item say what could be improved
-\item point out any interesting new opened problems that would be worth investigating
-\item include long-term goals
+\item Working directly with 32-bit float data, avoiding the frequent conversions to 64-bit floats used in R.
+\item Porting some operations to GPU.
+\item Possibility to plot Bezier curves and filled polygons.
 \end{itemize}
+\begin{center}
+\frame{\includegraphics[width=0.55\linewidth]{img/github_scattermore.png}}
+%\includegraphics[width=0.5\linewidth]{img/github_contributions.png}
+\end{center}
 \end{posterbox}
 
 \end{poster}
