@@ -19,7 +19,7 @@
 %   in less than 1 minute by just looking at the poster.
 
 % modify the fontscale parameter to make everything slighly bigger or smaller.
-\documentclass[portrait,a0paper,fontscale=0.25]{baposter}
+\documentclass[portrait,a0paper,fontscale=0.26]{baposter}
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -92,10 +92,11 @@
 	headershade=plain,
 	headerColorOne=black!15, % box header background color
 	headerFontColor=black,
+    headerfont=\bfseries\Large,
 	}%
 	{\includegraphics[height=7em]{logos/mff-black.pdf}}
-	{Configurable point rasterization for large scatterplots}
-	{\vspace{1ex} Tereza Kulichová}
+	{Configurable point rasterization\\for large scatterplots}
+	{\vspace{1.5ex} Tereza Kulichová | Supervisor: doc. RNDr. David Hoksza, Ph.D.}
 	{\includegraphics[height=7em]{logos/uk-red.pdf}}
 
 
@@ -104,98 +105,92 @@
 %
 
 \begin{posterbox}[column=0,name=background,
-headerColorOne=red!60, boxColorOne=red!20]{Background}
-Until recently, scatterplots could only be plotted in R using its very slow base plot function. 
+headerColorOne=green!50!black, boxColorOne=green!10, headerFontColor=white]{Thesis goals}
 
-The \textbf{speed} problem was solved by package \texttt{scattermore}. However, \texttt{scattermore} had only a single-purpose \textbf{API} and it didn't prevent \textbf{overplotting} -- overlapping of the data in the visualization, making it difficult to see individual data.
-
-The problem of overplotting, its symmetric case, and its primitive insufficient solution by randomizing point order are visible below.
-
-\begin{center}
-\setcaptiontype{figure}% Fake a figure environment
-{\frame{\includegraphics[width=0.25\linewidth]{img/overplot_yellow.png}}}
-\hfill
-{\frame{\includegraphics[width=0.25\linewidth]{img/overplot_blue.png}}}
-\hfill
-{\frame{\includegraphics[width=0.25\linewidth]{img/overplot_random.png}}}
-%\caption{Example of overplotting and techniques dealing with it.}
-\end{center}
-
-\end{posterbox}
-
-\begin{posterbox}[column=0, name=goals, below=background, headerColorOne=cyan!60, boxColorOne=cyan!20]{Thesis goals}
-
-We redesign \texttt{scattermore} with the following requirements.
+\texttt{Scattermore} is a simple R package used for scatterplot visualizations. The goal of the thesis is to expand \texttt{scattermore} to support new plotting functionality while retaining the performance.
 
 \begin{itemize}
 \item \textbf{High-customizable API.} We assign each subtask to a single method to ensure more variation in output for the user.
 \item \textbf{Reduction of overplotting.} We introduce the new RGBWT data format, which combines images equally.
 \item \textbf{Fast plotting.} We implement the computationally expensive operation in C language.
 \end{itemize}
-
 \end{posterbox}
 
-\begin{posterbox}[column=0, name=pipeline, below=goals, 
-headerColorOne=black!80, headerFontColor=white]{Scattermore pipeline}
-\tikzstyle{box}=[rectangle,draw,rounded corners=0.5ex]
-\tikzstyle{round}=[circle,draw, align=center]
-\begin{center}\begin{tikzpicture}[thick,font=\sf\scriptsize]
-\node[box,fill=pink!20] (input_no_colors_points) at (-2,12) {Points without color input};
-\node[box,fill=pink!20] (input_no_colors_lines) at (-2,10) {Lines without color input};
-\node[box,fill=black!10] (input_colors_points) at (-2,9) {Points with color input};
-\node[box,fill=black!10] (input_colors_lines) at (-2,7) {Lines with color input};
-\node[box,fill=red!30] (result) at (-2,5) {Raster result};
-\node[round,fill=yellow!20] (histogram) at (2,12) {Histogram\\raster};
-\node[round,fill=yellow!20] (blurred_histogram) at (5,12) {Kernelized\\histogram};
-\node[round,fill=orange!20] (colorized_histogram) at (4,10) {RGBWT\\raster};
-\node[round,fill=orange!20] (colorized_data) at (2,8) {RGBWT\\raster};
-\node[round,fill=orange!20] (merged_rgbwt) at (5,8) {Merged\\RGBWT};
-\node[round,fill=orange!20] (blurred_rgbwt) at (5,5) {Kernelized\\RGBWT};
-\node[round,fill=purple!20] (rgba_int) at (1,5) {Integer\\RGBA};
-\node[round,fill=green!20] (rgba_float) at (5,2) {Float\\RGBA};
-\node[round,fill=green!20] (blended_rgba) at (0,2) {Blended\\float RGBA};
+\begin{posterbox}[column=0, name=approach, below=background]{Approach}
+\begin{itemize}
+\item Design a specific pixel format that supports order-independent alpha-blending.
+\item Try some acceleration possibilities (SIMD, multithreading).
+\item Package and document everything properly to make \texttt{scattermore} easier to use.
+\end{itemize}
+\end{posterbox}
 
-\draw[->](input_no_colors_points) to node[above=20pt, midway, sloped, font=\tiny\ttfamily] {scatter\_points\_histogram} (histogram);
+\begin{posterbox}[column=0, name=pipeline, below=approach]{New API \& functionality overview}
+\tikzstyle{box}=[rectangle,draw,rounded corners=1ex,inner sep=1ex]
+\tikzstyle{round}=[circle,draw, align=center,inner sep=0.5ex]
+\tikzstyle{fn}=[midway, sloped, font=\tiny\ttfamily,fill=cyan!20,rounded corners=0.3ex, inner sep=0.3ex]
+\begin{center}\begin{tikzpicture}[thick,font=\sf\scriptsize,scale=0.9]
+\node[box,fill=pink!20] (input_no_colors_points) at (-3,14) {Points without color input};
+\node[box,fill=pink!20] (input_no_colors_lines) at (-3,12) {Lines without color input};
+\node[box,fill=black!10] (input_colors_points) at (-3,11) {Points with color input};
+\node[box,fill=black!10] (input_colors_lines) at (-3,9) {Lines with color input};
+\node[box,fill=red!30] (result) at (-3,7) {Raster result};
+\node[round,fill=yellow!20] (histogram) at (2,13) {Histogram\\raster};
+\node[round,fill=yellow!20] (blurred_histogram) at (4.5,14) {Kernelized\\histogram};
+\node[round,fill=orange!20] (colorized_histogram) at (4,11) {RGBWT\\raster};
+\node[round,fill=orange!20] (colorized_data) at (2,10) {RGBWT\\raster};
+\node[round,fill=orange!20] (merged_rgbwt) at (4.5,9) {Merged\\RGBWT};
+\node[round,fill=orange!20] (blurred_rgbwt) at (4.5,6) {Kernelized\\RGBWT};
+\node[round,fill=purple!20] (rgba_int) at (0,7) {Integer\\RGBA};
+\node[round,fill=green!20] (rgba_float) at (3,4) {Float\\RGBA};
+\node[round,fill=green!20] (blended_rgba) at (-1,4) {Blended\\float RGBA};
 
-\draw[->](input_no_colors_lines) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {scatter\_lines\_histogram} (histogram);
+\draw[->](input_no_colors_points) to node[above=20pt,fn] {scatter\_points\_histogram} (histogram);
 
-\draw[->](histogram) to node[above=20pt, midway, sloped, font=\tiny\ttfamily] {apply\_kernel\_histogram} (blurred_histogram);
+\draw[->](input_no_colors_lines) to node[above=10pt,fn] {scatter\_lines\_histogram} (histogram);
 
-\draw[->](blurred_histogram) to node[below=15pt, midway, sloped, font=\tiny\ttfamily] {histogram\_to\_rgbwt} (colorized_histogram);
+\draw[->](histogram) to node[above=20pt,fn] {apply\_kernel\_histogram} (blurred_histogram);
 
-\draw[->,dotted](histogram) to node[below=10pt, midway, sloped, font=\tiny\ttfamily] {histogram\_to\_rgbwt} (colorized_histogram);
+\draw[->](blurred_histogram) to node[below=15pt,fn] {histogram\_to\_rgbwt} (colorized_histogram);
 
-\draw[->](input_colors_points) to node[above=15pt, midway, sloped, font=\tiny\ttfamily] {scatter\_points\_rgbwt} (colorized_data);
+\draw[->,dotted](histogram) to node[below=10pt,fn] {histogram\_to\_rgbwt} (colorized_histogram);
 
-\draw[->](input_colors_lines) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {scatter\_lines\_rgbwt} (colorized_data);
+\draw[->](input_colors_points) to node[above=15pt,fn] {scatter\_points\_rgbwt} (colorized_data);
 
-\draw[->](colorized_data) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {merge\_rgbwt} (merged_rgbwt);
+\draw[->](input_colors_lines) to node[above=10pt,fn] {scatter\_lines\_rgbwt} (colorized_data);
 
-\draw[->](colorized_histogram) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {merge\_rgbwt} (merged_rgbwt);
+\draw[->](colorized_data) to node[above=10pt,fn] {merge\_rgbwt} (merged_rgbwt);
 
-\draw[->](merged_rgbwt) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {apply\_kernel\_rgbwt} (blurred_rgbwt);
+\draw[->](colorized_histogram) to node[above=10pt,fn] {merge\_rgbwt} (merged_rgbwt);
 
-\draw[->,dotted](blurred_rgbwt) to node[below=10pt, midway, sloped, font=\tiny\ttfamily] {rgbwt\_to\_rgba\_int} (rgba_int);
+\draw[->](merged_rgbwt) to node[above=10pt,fn] {apply\_kernel\_rgbwt} (blurred_rgbwt);
 
-\draw[->](blurred_rgbwt) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {rgbwt\_to\_rgba\_float} (rgba_float);
+\draw[->,dotted](blurred_rgbwt) to node[below=10pt,fn] {rgbwt\_to\_rgba\_int} (rgba_int);
 
-\draw[->,dotted](colorized_histogram) to node[below=10pt, left, sloped, font=\tiny\ttfamily] {rgbwt\_to\_rgba\_int} (rgba_int);
+\draw[->](blurred_rgbwt) to node[below=15pt,fn] {rgbwt\_to\_rgba\_float} (rgba_float);
 
-\draw[->,dotted](colorized_data) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {rgbwt\_to\_rgba\_int} (rgba_int);
+\draw[->,dotted](colorized_histogram) to node[below=10pt, fn, left] {rgbwt\_to\_rgba\_int} (rgba_int);
 
-\draw[->,dotted](merged_rgbwt) to node[below=10pt, midway, sloped, font=\tiny\ttfamily] {rgbwt\_to\_rgba\_int} (rgba_int);
+\draw[->,dotted](colorized_data) to node[above=10pt,fn] {rgbwt\_to\_rgba\_int} (rgba_int);
 
-\draw[->,dotted](rgba_float) to node[below=10pt, midway, sloped, font=\tiny\ttfamily] {rgba\_float\_to\_rgba\_int} (rgba_int);
+\draw[->,dotted](merged_rgbwt) to node[below=10pt,fn] {rgbwt\_to\_rgba\_int} (rgba_int);
 
-\draw[->](rgba_float) to node[below=10pt, midway, sloped, font=\tiny\ttfamily] {blend\_rgba\_float} (blended_rgba);
+\draw[->,dotted](rgba_float) to node[below=10pt,fn] {rgba\_float\_to\_rgba\_int} (rgba_int);
 
-\draw[->](blended_rgba) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {rgba\_float\_to\_rgba\_int} (rgba_int);
+\draw[->](rgba_float) to node[below=10pt,fn] {blend\_rgba\_float} (blended_rgba);
 
-\draw[->](rgba_int) to node[above=10pt, midway, sloped, font=\tiny\ttfamily] {rgba\_int\_to\_raster} (result);
+\draw[->](blended_rgba) to node[above=10pt,fn] {rgba\_float\_to\_rgba\_int} (rgba_int);
+
+\draw[->](rgba_int) to node[above=10pt,fn] {rgba\_int\_to\_raster} (result);
 
 \end{tikzpicture}\end{center}
 \end{posterbox}
 
+\begin{posterbox}[column=0, name=documentation, below=pipeline]{Deployed user-friendly documentation}
+\begin{center}
+\includegraphics[width=\linewidth]{img/github_scattermore.png}
+%\includegraphics[width=0.5\linewidth]{img/github_contributions.png}
+\end{center}
+\end{posterbox}
 
 %
 % RIGHT COLUMN
@@ -205,47 +200,67 @@ headerColorOne=black!80, headerFontColor=white]{Scattermore pipeline}
 % with measurements are perfect, tables are also good.
 %
 
-\begin{posterbox}[column=1, name=overplotting_api, headerColorOne=black!80, headerFontColor=white]{Result: Solution to overplotting and better API}
-\begin{center}
-\includegraphics[width=0.3\linewidth]{img/overplot_merge.png}
-\end{center}
+\begin{posterbox}[column=1, name=overplotting_api]{Result: RGBWT avoids overplotting artifacts}
+\begin{tikzpicture}
+\coordinate (left) at (0,0);
+\coordinate (right) at (\linewidth, 0);
+\node[anchor=west] (yellow_node) at (left)
+  {\includegraphics[width=0.15\linewidth]{img/overplot_yellow.png}};
+\node[below=1ex of yellow_node] (blue_node)
+  {\includegraphics[width=0.15\linewidth]{img/overplot_blue.png}};
+\node[below=1ex of blue_node] (random_node)
+  {\includegraphics[width=0.15\linewidth]{img/overplot_random.png}};
+\node[anchor=north east] (merge_node) at (right|-yellow_node.north)
+  {\includegraphics[width=0.3\linewidth]{img/overplot_merge.png}};
+
+\node[text width=.3\linewidth, right=1em of yellow_node.south east] (basic_text)
+  {Symmetric cases of overplotting.};
+\node[text width=.25\linewidth, right=1em of random_node] (random_text)
+  {Simple mitigation by randomizing the point plotting order.};
+\node[text width=.5\linewidth, anchor=north east] (merge_text) at ([yshift=-3ex] merge_node.south east)
+  {\texttt{Scattermore} solves the problem using the new pixel format.};
+  
+\draw[->] (basic_text) to[bend right=20] (yellow_node);
+\draw[->] (basic_text) to[bend left=20] (blue_node);
+\draw[->] (random_text) to[bend left=20] (random_node);
+\draw[->] (merge_text) to[bend right=20] (merge_node);
+\end{tikzpicture}
 \end{posterbox}
 
 
-\begin{posterbox}[column=1, name=plot, below=overplotting_api, headerColorOne=black!80, headerFontColor=white]{Result: Improved Performance}
+\begin{posterbox}[column=1, name=plot, below=overplotting_api, headerColorOne=yellow!90!brown]{Result: Performance improvements}
 \begin{center}
 \includegraphics[width=0.7\linewidth]{img/version_comparison.png}
+\includegraphics[width=0.7\linewidth]{img/version_comparison_kernel.png}
 \end{center}
-
-Comparison of the speed difference when plotting points among R, RStudio, original, and new \texttt{scattermore}’s version.
 \end{posterbox}
 
 
-\begin{posterbox}[column=1, name=main_result, below=plot, headerColorOne=green!90, boxColorOne=green!20]{Main result}
-\large\bfseries
-\vspace{1ex}
+\begin{posterbox}[column=1, name=combined_plotting, below=plot]{Result: Complex plotting}
 \begin{center}
-% Program ThesisProgram solves the problem better than OtherProgram if X, and faster if Y.
-Scattermore offers a highly customizable API, solves the problem of overplotting, and is much faster than base R functions.
+\includegraphics[width=0.3\linewidth]{img/tibindi_points.png}
+\includegraphics[width=0.3\linewidth]{img/tibindi_lines.png}
+\includegraphics[width=0.3\linewidth]{img/tibindi_blend.png}
 \end{center}
-\vspace{.5ex}
+
+Combined plotting of more complicated primitives utilizing functionalities in the redesigned API.
 \end{posterbox}
 
-\begin{posterbox}[column=1, name=conclusion, below=main_result, bottomaligned=pipeline, headerColorOne=violet!50, boxColorOne=violet!20]{Conclusions}
+
+\begin{posterbox}[column=1, name=conclusion, below=combined_plotting, bottomaligned=documentation, headerColorOne=cyan!80!blue!66!black, boxColorOne=cyan!80!blue!10, headerFontColor=white]{Conclusions}
 \begin{itemize}
 \item \texttt{Scattermore} enables users to blur images, blend or merge them according to their preferences and, at the same time, sufficiently fast.
 \item It is especially useful in the cytometric community for interactive analysis of large biological data.
 \item \texttt{Scattermore} is available on GitHub as a development version and as R's official CRAN package version.
 \end{itemize}
-\textbf{Possible future work:}
-\begin{itemize}
-\item Working directly with 32-bit float data, avoiding the frequent conversions to 64-bit floats used in R.
-\item Porting some operations to GPU.
-\item Possibility to plot Bezier curves and filled polygons.
-\end{itemize}
+% \textbf{Possible future work:}
+% \begin{itemize}
+% \item Working directly with 32-bit float data, avoiding the frequent conversions to 64-bit floats used in R.
+% \item Porting some operations to GPU.
+% \item Possibility to plot Bezier curves and filled polygons.
+% \end{itemize}
 \begin{center}
-\frame{\includegraphics[width=0.55\linewidth]{img/github_scattermore.png}}
-%\includegraphics[width=0.5\linewidth]{img/github_contributions.png}
+\includegraphics[width=0.15\linewidth]{img/qr_code.png}
 \end{center}
 \end{posterbox}
 
